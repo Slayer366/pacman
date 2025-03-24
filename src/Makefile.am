@@ -2,7 +2,7 @@
 
 ## Created by Anjuta
 
-AM_CPPFLAGS = -I/usr/include/SDL2\
+AM_CPPFLAGS = \
 	-DPACKAGE_LOCALE_DIR=\""$(localedir)"\" \
 	-DPACKAGE_SRC_DIR=\""$(srcdir)"\" \
 	-DPACKAGE_DATA_DIR=\""$(pkgdatadir)"\"
@@ -21,8 +21,6 @@ pacman_SOURCES =  \
 	figur.h \
 	game.cpp \
 	game.h \
-	gamecontroller.cpp \
-	gamecontroller.h \
 	ghost_figur.cpp \
 	ghost_figur.h \
 	pacman.cpp \
@@ -60,7 +58,6 @@ pacman_SOURCES =  \
 
 pacman_CXXFLAGS = -ansi \
 	-fno-default-inline \
-	-ffor-scope \
 	-Wall \
 	-W \
 	-Wpointer-arith \
@@ -76,12 +73,12 @@ pacman_CXXFLAGS = -ansi \
 	-Wno-reorder \
 	-D_GNU_SOURCE
 
-pacman_LDFLAGS = -I/usr/include/SDL2 -D_REENTRANT #$(SDL2_CFLAGS)
+pacman_LDFLAGS = -D_REENTRANT $(SDL_CFLAGS)
 
 pacman_LDADD =  \
-	$(SDL2_LIBS) \
-	-lSDL2_mixer \
-	-L/usr/lib64 -lSDL2
+	$(SDL_LIBS) \
+	-lSDL_mixer \
+	-lpthread
 
 
 

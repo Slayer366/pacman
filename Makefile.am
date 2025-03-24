@@ -12,10 +12,6 @@ dist_doc_DATA = \
 	NEWS \
 	TODO
 
-## Desktop DIR
-desktopdir = $(datadir)/applications
-desktop_in_files = pacman.desktop.in
-desktop_DATA = $(desktop_in_files:.desktop.in=.desktop)
 
 INTLTOOL_FILES = intltool-extract.in \
 	intltool-merge.in \
@@ -34,10 +30,3 @@ DISTCLEANFILES = intltool-extract \
 # Remove doc directory on uninstall
 uninstall-local:
 	-rm -r $(docdir)
-
-UPDATE_DESKTOP = update-desktop-database -q || :
-
-install-data-hook:
-	$(UPDATE_DESKTOP)
-uninstall-hook:
-	$(UPDATE_DESKTOP)

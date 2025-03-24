@@ -1,8 +1,4 @@
 #include "highscore.h"
-#include <sstream>
-using namespace std;
-
-const std::string VALID_CHARACTERS = std::string(" ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-.:,;!?");
 
 HighscoreEntry::HighscoreEntry(std::string playerName, int score, int level) {
 	this->playerName = std::string(playerName);
@@ -23,20 +19,6 @@ void HighscoreEntry::removeLastCharFromPlayerName() {
 	}
 }
 
-void HighscoreEntry::rotateLastCharOfPlayerName(bool reverse) {
-	if (playerName.length() >= 1) {
-		char c = playerName[playerName.length()-1];
-		std::string::size_type pos = VALID_CHARACTERS.find(c);
-		if (reverse) {
-			pos = (pos + VALID_CHARACTERS.length() - 1) % VALID_CHARACTERS.length();
-		} else {
-			pos = (pos + 1) % VALID_CHARACTERS.length();
-		}
-		playerName[playerName.length()-1] = VALID_CHARACTERS[pos];
-	} else {
-		addCharToPlayerName(reverse ? '?' : 'A');
-	}
-}
 
 HighscoreList *HighscoreList::instance = NULL;
 
@@ -231,7 +213,7 @@ void HighscoreList::draw(bool nameAlterable, bool highlightLast) {
 		sfCaret = Screen::getTextSurface(Screen::getVeryLargeFont(), "-", Constants::YELLOW_COLOR);
 	if (readonly && !sfReadonly)
 		sfReadonly = Screen::getTextSurface(Screen::getFont(), "Highscore file could not be read!", Constants::RED_COLOR);
-	ostringstream ostr_highscore;
+	char ch_array[13];
 	if (idxLastInsertedEntry < 0 || !highlightLast) {
 		idxHighlightedEntry = -1;
 	} else {
@@ -239,18 +221,16 @@ void HighscoreList::draw(bool nameAlterable, bool highlightLast) {
 			idxHighlightedEntry = idxLastInsertedEntry;
 			if (sfCurrentPos)
 				SDL_FreeSurface(sfCurrentPos);
-			ostr_highscore << idxHighlightedEntry+1 << ".";
-			sfCurrentPos = Screen::getTextSurface(Screen::getFont(), ostr_highscore.str().c_str(), Constants::YELLOW_COLOR);
+			sprintf(ch_array, "%d.", idxHighlightedEntry+1);
+			sfCurrentPos = Screen::getTextSurface(Screen::getFont(), ch_array, Constants::YELLOW_COLOR);
 			if (sfCurrentScore)
 				SDL_FreeSurface(sfCurrentScore);
-			ostr_highscore.str("");
-			ostr_highscore << entries->at(idxHighlightedEntry)->getScore();
-			sfCurrentScore = Screen::getTextSurface(Screen::getFont(), ostr_highscore.str().c_str(), Constants::YELLOW_COLOR);
+			sprintf(ch_array, "%d", entries->at(idxHighlightedEntry)->getScore());
+			sfCurrentScore = Screen::getTextSurface(Screen::getFont(), ch_array, Constants::YELLOW_COLOR);
 			if (sfCurrentLevel)
 				SDL_FreeSurface(sfCurrentLevel);
-			ostr_highscore.str("");
-			ostr_highscore << entries->at(idxHighlightedEntry)->getLevel();
-			sfCurrentLevel = Screen::getTextSurface(Screen::getFont(), ostr_highscore.str().c_str(), Constants::YELLOW_COLOR);
+			sprintf(ch_array, "%d", entries->at(idxHighlightedEntry)->getLevel());
+			sfCurrentLevel = Screen::getTextSurface(Screen::getFont(), ch_array, Constants::YELLOW_COLOR);
 		}
 		if (sfCurrentName)
 			SDL_FreeSurface(sfCurrentName);
@@ -274,22 +254,19 @@ void HighscoreList::draw(bool nameAlterable, bool highlightLast) {
 	int i = 0;
 	for (std::vector<HighscoreEntry*>::iterator it = entries->begin(); it != entries->end(); ++it) {
 		if (!sfPositions[i]) {
-			ostr_highscore.str("");
-			ostr_highscore << i+1 << ".";
-			sfPositions[i] = Screen::getTextSurface(Screen::getFont(), ostr_highscore.str().c_str(), Constants::GRAY_COLOR);
+			sprintf(ch_array, "%d.", i+1);
+			sfPositions[i] = Screen::getTextSurface(Screen::getFont(), ch_array, Constants::GRAY_COLOR);
 		}
 		if (!sfPlayerNames[i] && (*it)->getPlayerNameLength()) {
 			sfPlayerNames[i] = Screen::getTextSurface(Screen::getFont(), (*it)->getPlayerName(), Constants::GRAY_COLOR);
 		}
 		if (!sfScores[i]) {
-			ostr_highscore.str("");
-			ostr_highscore << (*it)->getScore();
-			sfScores[i] = Screen::getTextSurface(Screen::getFont(), ostr_highscore.str().c_str(), Constants::GRAY_COLOR);
+			sprintf(ch_array, "%d", (*it)->getScore());
+			sfScores[i] = Screen::getTextSurface(Screen::getFont(), ch_array, Constants::GRAY_COLOR);
 		}
 		if (!sfLevels[i]) {
-			ostr_highscore.str("");
-			ostr_highscore << (*it)->getLevel();
-			sfLevels[i] = Screen::getTextSurface(Screen::getFont(), ostr_highscore.str().c_str(), Constants::GRAY_COLOR);
+			sprintf(ch_array, "%d", (*it)->getLevel());
+			sfLevels[i] = Screen::getTextSurface(Screen::getFont(), ch_array, Constants::GRAY_COLOR);
 		}
 		if (sfPositions[i]->w > maxWidthPosition)
 			maxWidthPosition = sfPositions[i]->w;
@@ -349,17 +326,8 @@ void HighscoreList::draw(bool nameAlterable, bool highlightLast) {
 		Screen::getInstance()->draw(sfReadonly, (Constants::WINDOW_WIDTH-sfReadonly->w)>>1, (Constants::WINDOW_HEIGHT-sfReadonly->h)>>1);
 	if (!nameAlterable)
 		Screen::getInstance()->draw(sfBackItem, (Constants::WINDOW_WIDTH-sfBackItem->w)>>1, 430);
-	Screen::getInstance()->addUpdateClipRect();
+	Screen::getInstance()->addTotalUpdateRect();
 	Screen::getInstance()->Refresh();
-}
-
-void HighscoreList::finishEntry() {
-	if (entries->at(idxLastInsertedEntry)->getPlayerNameLength() == 0)
-		entries->at(idxLastInsertedEntry)->setPlayerName("Pacman");  // default name if none has been entered
-	if (sfPlayerNames[idxLastInsertedEntry]) {
-		SDL_FreeSurface(sfPlayerNames[idxLastInsertedEntry]);
-		sfPlayerNames[idxLastInsertedEntry] = NULL;  // has to be updated when drawn next time
-	}
 }
 
 bool HighscoreList::eventloop(bool nameAlterable, bool *redrawNeeded) {
@@ -372,9 +340,14 @@ bool HighscoreList::eventloop(bool nameAlterable, bool *redrawNeeded) {
 			if (nameAlterable) {
 				bool upper = ((event.key.keysym.mod & KMOD_LSHIFT) | (event.key.keysym.mod & KMOD_RSHIFT)) > 0;
 				if (event.key.keysym.sym == SDLK_RETURN) {
-					finishEntry();
+					if (entries->at(idxLastInsertedEntry)->getPlayerNameLength() == 0)
+						entries->at(idxLastInsertedEntry)->setPlayerName("Pacman");  // default name if none has been entered
+					if (sfPlayerNames[idxLastInsertedEntry]) {
+						SDL_FreeSurface(sfPlayerNames[idxLastInsertedEntry]);
+						sfPlayerNames[idxLastInsertedEntry] = NULL;  // has to be updated when drawn next time
+					}
 					return false;
-				} else if (event.key.keysym.sym == SDLK_BACKSPACE || event.key.keysym.sym == SDLK_LEFT) {
+				} else if (event.key.keysym.sym == SDLK_BACKSPACE) {
 					entries->at(idxLastInsertedEntry)->removeLastCharFromPlayerName();
 					*redrawNeeded = true;
 				} else if (event.key.keysym.sym == SDLK_SPACE) {
@@ -401,34 +374,34 @@ bool HighscoreList::eventloop(bool nameAlterable, bool *redrawNeeded) {
 				} else if (event.key.keysym.sym == SDLK_MINUS || event.key.keysym.sym == SDLK_KP_MINUS) {
 					entries->at(idxLastInsertedEntry)->addCharToPlayerName('-');
 					*redrawNeeded = true;
-				} else if (event.key.keysym.sym == SDLK_1 || event.key.keysym.sym == SDLK_KP_1) {
+				} else if (event.key.keysym.sym == SDLK_1 || event.key.keysym.sym == SDLK_KP1) {
 					entries->at(idxLastInsertedEntry)->addCharToPlayerName('1');
 					*redrawNeeded = true;
-				} else if (event.key.keysym.sym == SDLK_2 || event.key.keysym.sym == SDLK_KP_2) {
+				} else if (event.key.keysym.sym == SDLK_2 || event.key.keysym.sym == SDLK_KP2) {
 					entries->at(idxLastInsertedEntry)->addCharToPlayerName('2');
 					*redrawNeeded = true;
-				} else if (event.key.keysym.sym == SDLK_3 || event.key.keysym.sym == SDLK_KP_3) {
+				} else if (event.key.keysym.sym == SDLK_3 || event.key.keysym.sym == SDLK_KP3) {
 					entries->at(idxLastInsertedEntry)->addCharToPlayerName('3');
 					*redrawNeeded = true;
-				} else if (event.key.keysym.sym == SDLK_4 || event.key.keysym.sym == SDLK_KP_4) {
+				} else if (event.key.keysym.sym == SDLK_4 || event.key.keysym.sym == SDLK_KP4) {
 					entries->at(idxLastInsertedEntry)->addCharToPlayerName('4');
 					*redrawNeeded = true;
-				} else if (event.key.keysym.sym == SDLK_5 || event.key.keysym.sym == SDLK_KP_5) {
+				} else if (event.key.keysym.sym == SDLK_5 || event.key.keysym.sym == SDLK_KP5) {
 					entries->at(idxLastInsertedEntry)->addCharToPlayerName('5');
 					*redrawNeeded = true;
-				} else if (event.key.keysym.sym == SDLK_6 || event.key.keysym.sym == SDLK_KP_6) {
+				} else if (event.key.keysym.sym == SDLK_6 || event.key.keysym.sym == SDLK_KP6) {
 					entries->at(idxLastInsertedEntry)->addCharToPlayerName('6');
 					*redrawNeeded = true;
-				} else if (event.key.keysym.sym == SDLK_7 || event.key.keysym.sym == SDLK_KP_7) {
+				} else if (event.key.keysym.sym == SDLK_7 || event.key.keysym.sym == SDLK_KP7) {
 					entries->at(idxLastInsertedEntry)->addCharToPlayerName('7');
 					*redrawNeeded = true;
-				} else if (event.key.keysym.sym == SDLK_8 || event.key.keysym.sym == SDLK_KP_8) {
+				} else if (event.key.keysym.sym == SDLK_8 || event.key.keysym.sym == SDLK_KP8) {
 					entries->at(idxLastInsertedEntry)->addCharToPlayerName('8');
 					*redrawNeeded = true;
-				} else if (event.key.keysym.sym == SDLK_9 || event.key.keysym.sym == SDLK_KP_9) {
+				} else if (event.key.keysym.sym == SDLK_9 || event.key.keysym.sym == SDLK_KP9) {
 					entries->at(idxLastInsertedEntry)->addCharToPlayerName('9');
 					*redrawNeeded = true;
-				} else if (event.key.keysym.sym == SDLK_0 || event.key.keysym.sym == SDLK_KP_0) {
+				} else if (event.key.keysym.sym == SDLK_0 || event.key.keysym.sym == SDLK_KP0) {
 					entries->at(idxLastInsertedEntry)->addCharToPlayerName('0');
 					*redrawNeeded = true;
 				} else if (event.key.keysym.sym == SDLK_a) {
@@ -509,79 +482,23 @@ bool HighscoreList::eventloop(bool nameAlterable, bool *redrawNeeded) {
 				} else if (event.key.keysym.sym == SDLK_z) {
 					entries->at(idxLastInsertedEntry)->addCharToPlayerName(upper ? 'Z' : 'z');
 					*redrawNeeded = true;
-				} else if (event.key.keysym.sym == SDLK_UP) {
-					entries->at(idxLastInsertedEntry)->rotateLastCharOfPlayerName(false);
-					*redrawNeeded = true;
-				} else if (event.key.keysym.sym == SDLK_DOWN) {
-					entries->at(idxLastInsertedEntry)->rotateLastCharOfPlayerName(true);
-					*redrawNeeded = true;
-				} else if (event.key.keysym.sym == SDLK_RIGHT) {
-					entries->at(idxLastInsertedEntry)->addCharToPlayerName('A');
-					*redrawNeeded = true;
 				}
 			} else {
-				if (event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_ESCAPE || event.key.keysym.sym == SDLK_q) {
+				if (event.key.keysym.sym == SDLK_RETURN) {
 					return false;
 				} else if (event.key.keysym.sym == SDLK_f) {
 					Screen::getInstance()->toggleFullscreen();
 					*redrawNeeded = true;
 				} else if (event.key.keysym.sym == SDLK_s) {
 					Sounds::getInstance()->toggleEnabled();
-				}
-			}
-			break;
-		case SDL_CONTROLLERBUTTONDOWN:
-			if (nameAlterable) {
-				if (event.cbutton.button == SDL_CONTROLLER_BUTTON_START) {
-					finishEntry();
-					return false;
-				} else if (event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_UP) {
-					entries->at(idxLastInsertedEntry)->rotateLastCharOfPlayerName(false);
-					*redrawNeeded = true;
-				} else if (event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_DOWN) {
-					entries->at(idxLastInsertedEntry)->rotateLastCharOfPlayerName(true);
-					*redrawNeeded = true;
-				} else if (event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT) {
-					entries->at(idxLastInsertedEntry)->addCharToPlayerName('A');
-					*redrawNeeded = true;
-				} else if (event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT) {
-					entries->at(idxLastInsertedEntry)->removeLastCharFromPlayerName();
-					*redrawNeeded = true;
-				}
-			} else {
-				if (event.cbutton.button == SDL_CONTROLLER_BUTTON_START || event.cbutton.button == SDL_CONTROLLER_BUTTON_BACK || 
-					event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT || event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT) {
-					return false;
-				}
-			}
-			break;
-		case SDL_CONTROLLERAXISMOTION:
-			if (nameAlterable) {
-				if ((event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) && (event.caxis.value < -Constants::AXIS_ACTIVE_ZONE)) {
-					entries->at(idxLastInsertedEntry)->rotateLastCharOfPlayerName(false);
-					*redrawNeeded = true;
-				} else if ((event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) && (event.caxis.value > Constants::AXIS_ACTIVE_ZONE)) {
-					entries->at(idxLastInsertedEntry)->rotateLastCharOfPlayerName(true);
-					*redrawNeeded = true;
-				} else if ((event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX) && (event.caxis.value > Constants::AXIS_ACTIVE_ZONE)) {
-					entries->at(idxLastInsertedEntry)->addCharToPlayerName('A');
-					*redrawNeeded = true;
-				} else if ((event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX) && (event.caxis.value < -Constants::AXIS_ACTIVE_ZONE)) {
-					entries->at(idxLastInsertedEntry)->removeLastCharFromPlayerName();
-					*redrawNeeded = true;
-				}
-			} else {
-				if (((event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX) && (event.caxis.value > Constants::AXIS_ACTIVE_ZONE)) || 
-					((event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX) && (event.caxis.value < -Constants::AXIS_ACTIVE_ZONE))) {
+				} else if ((event.key.keysym.sym == SDLK_q)||(event.key.keysym.sym == SDLK_ESCAPE)) {
 					return false;
 				}
 			}
 			break;
 		case SDL_MOUSEBUTTONDOWN:
 			if (event.button.button == SDL_BUTTON_LEFT && !nameAlterable) {
-				int event_x = Screen::xToClipRect(event.motion.x);
-				int event_y = Screen::yToClipRect(event.motion.y);
-				if ((Constants::WINDOW_WIDTH-sfBackItem->w)>>1 <= event_x && event_x <= (Constants::WINDOW_WIDTH+sfBackItem->w)>>1 && 430 <= event_y && event_y <= 430+sfBackItem->h) {
+				if ((Constants::WINDOW_WIDTH-sfBackItem->w)>>1 <= event.motion.x && event.motion.x <= (Constants::WINDOW_WIDTH+sfBackItem->w)>>1 && 430 <= event.motion.y && event.motion.y <= 430+sfBackItem->h) {
 					return false;
 				}
 			}
@@ -589,12 +506,15 @@ bool HighscoreList::eventloop(bool nameAlterable, bool *redrawNeeded) {
 		case SDL_QUIT:
 			return false;
 		}
-		if (event.window.event == SDL_WINDOWEVENT_EXPOSED || event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
+		if (event.type == SDL_ACTIVEEVENT) {
+			if (event.active.state & SDL_APPACTIVE || event.active.state & SDL_APPINPUTFOCUS) {
+				refreshWindow = true;
+			}
+		} else if (event.type == SDL_VIDEOEXPOSE) {
 			refreshWindow = true;
 		}
 	}
 	if (refreshWindow) {
-		Screen::getInstance()->clearOutsideClipRect();
 		Screen::getInstance()->addTotalUpdateRect();
 		Screen::getInstance()->Refresh();
 	}
@@ -616,26 +536,6 @@ void HighscoreList::show(bool nameAlterable, bool highlightLast) {
 			redrawNeeded = false;
 		}
 		SDL_Delay(Constants::MIN_FRAME_DURATION);
-	}
-}
-
-void HighscoreList::resetHighlightedEntry() {
-	idxHighlightedEntry = -1;
-	if (sfCurrentPos) {
-		SDL_FreeSurface(sfCurrentPos);
-		sfCurrentPos = NULL;
-	}
-	if (sfCurrentName) {
-		SDL_FreeSurface(sfCurrentName);
-		sfCurrentName = NULL;
-	}
-	if (sfCurrentScore) {
-		SDL_FreeSurface(sfCurrentScore);
-		sfCurrentScore = NULL;
-	}
-	if (sfCurrentLevel) {
-		SDL_FreeSurface(sfCurrentLevel);
-		sfCurrentLevel = NULL;
 	}
 }
 
@@ -665,11 +565,6 @@ bool HighscoreList::readEncryptedLine(std::ifstream &f, std::string &line) {
 		}
 		return (line.length() > 0);
 	}
-}
-
-bool HighscoreList::readLine(std::ifstream &f, std::string &line) {
-    std::getline(f, line);
-    return (line.length() > 0);
 }
 
 void HighscoreList::load() {
@@ -704,7 +599,7 @@ void HighscoreList::load() {
 		if (f.is_open()) {
 			std::string line;
 			uint8_t linesRead = 0, validLines = 0;
-			while (fileIsEncrypted ? readEncryptedLine(f, line) : readLine(f, line)) {
+			while (fileIsEncrypted ? readEncryptedLine(f, line) : std::getline(f, line)) {
 				if (line.length() >= 1) {
 					++linesRead;
 					std::string::size_type pos = line.find('|');
@@ -754,12 +649,11 @@ void HighscoreList::save() {
 				nextKeyPosition = 0;
 				for (std::vector<HighscoreEntry*>::iterator it = entries->begin(); it != entries->end(); ++it) {
 					std::string line = std::string((*it)->getPlayerName()) + "|";
-					ostringstream ostr_val;
-					ostr_val << (*it)->getScore() << "|";
-					line += ostr_val.str().c_str();
-					ostr_val.str("");
-					ostr_val << (*it)->getLevel() << endl;
-					line += ostr_val.str().c_str();
+					char c_val[10];
+					sprintf(c_val, "%d|", (*it)->getScore());
+					line += c_val;
+					sprintf(c_val, "%d\n", (*it)->getLevel());
+					line += c_val;
 					std::string encryptedLine = "";
 					for (std::string::size_type i = 0; i < line.length(); ++i) {
 						char c = line[i] ^ rawEncryptionKey[nextKeyPosition];

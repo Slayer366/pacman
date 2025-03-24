@@ -1,14 +1,12 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
-#include <SDL2/SDL_gamecontroller.h>
+#include <SDL/SDL.h>
+#include <SDL/SDL_ttf.h>
 #include "constants.h"
 #include "pacman_figur.h"
 #include "ghost_figur.h"
 #include "highscore.h"
-#include "gamecontroller.h"
 
 class Game {
 	public:
@@ -35,7 +33,6 @@ class Game {
 		void stop(bool stop);  // stop all figures
 
 		bool refreshGhosts;
-		bool completeRedraw;
 
 		bool pause;
 
@@ -47,7 +44,7 @@ class Game {
 		int cnt_hunting_mode;
 		void stopHuntingMode();
 
-		void preselectDirection(int keycode, int value = 0);
+		void preselectDirection(int keycode);
 		void togglePause();
 		bool eventloop();
 

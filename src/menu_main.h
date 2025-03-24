@@ -6,7 +6,6 @@
 #include "menu_about.h"
 #include "funny_animation.h"
 #include "highscore.h"
-#include "gamecontroller.h"
 
 class MenuMain : public Menu {
 	public:
@@ -17,8 +16,9 @@ class MenuMain : public Menu {
 		MenuMain();
 		~MenuMain();
 		static MenuMain* instance;
-		enum Entries {BACK, ABOUT, HIGHSCORE, OPTIONS, STARTGAME};
-		Menu *menuoptions;
+		//enum Entries {BACK, ABOUT, HIGHSCORE, OPTIONS, STARTGAME};
+		enum Entries {BACK, ABOUT, HIGHSCORE, STARTGAME};
+		//Menu *menuoptions;
 		Menu *menuabout;
 		SDL_Surface *appTitle1, *appTitle2, *titlePacman, *version;
 		int handleSelection();

@@ -1,12 +1,10 @@
 #ifndef MENU_H
 #define MENU_H
 #include "platform.h"
-#include <SDL2/SDL_ttf.h>
-#include <SDL2/SDL_gamecontroller.h>
+#include <SDL/SDL_ttf.h>
 #include <vector>
 #include "menu_item.h"
 #include "sounds.h"
-#include "constants.h"
 
 using namespace std;
 
@@ -20,11 +18,13 @@ class Menu {
 		void addMenuItem(const char* menuItem, const char* menuItemAlt = NULL);
 		void menuItemUp();
 		void menuItemDown();
-		void menuItemSelect(uint8_t selection);
+		void menuItemSelect(int selection);
 		MenuItem* getSelectedMenuItem();
 	protected:
-		uint8_t selection;
+		static const int MIN_FRAME_DURATION = 30;
+		unsigned int selection;
 		vector<MenuItem*> menuItems;
+		Screen *screen;
 		SDL_Surface *menuTitle;
 		virtual int eventloop();
 		void drawMenuItems();

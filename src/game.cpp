@@ -23,8 +23,7 @@ Game::Game():
 	stopMoving(false),
 	refreshGhosts(false),
 	pause(false),
-	cnt_hunting_mode(-1),
-	completeRedraw(false)
+	cnt_hunting_mode(-1)
 {
 	scoreLabel = Screen::getTextSurface(Screen::getFont(), "Score", Constants::WHITE_COLOR);
 	levelLabel = Screen::getTextSurface(Screen::getFont(), "Level", Constants::WHITE_COLOR);
@@ -53,7 +52,6 @@ void Game::init() {
 	cnt_hunting_mode = -1;
 	cnt_sleep        = -1;
 
-	GameController::getInstance()->searchAndOpen();
 	Labyrinth::getInstance()->resetLevel(1);
 
 	// TODO: extract new class Player with a method reset()?
@@ -64,7 +62,7 @@ void Game::init() {
 	currentScore = Labyrinth::getInstance()->getScore();
 	Screen::getInstance()->draw(scoreLabel, Constants::SCORE_X, Constants::SCORE_Y);
 	Screen::getInstance()->draw(levelLabel, Constants::LEVEL_X, Constants::LEVEL_Y);
-	Screen::getInstance()->addUpdateClipRect();
+	Screen::getInstance()->addTotalUpdateRect();
 	Screen::getInstance()->Refresh();
 	currentTicks     = SDL_GetTicks();
 }
@@ -81,14 +79,14 @@ void Game::updateDelayTime() {
 	}
 }
 
-void Game::preselectDirection(int keycode, int value) {
-	if (keycode == SDLK_LEFT || keycode == SDLK_h || keycode == SDL_CONTROLLER_BUTTON_DPAD_LEFT || ((keycode == SDL_CONTROLLER_AXIS_LEFTX) && (value < -Constants::AXIS_ACTIVE_ZONE))) {
+void Game::preselectDirection(int keycode) {
+	if (keycode == SDLK_LEFT) {
 		Pacman::getInstance()->direction_pre = Figur::LEFT;
-	} else if (keycode == SDLK_UP || keycode == SDLK_k || keycode == SDL_CONTROLLER_BUTTON_DPAD_UP || ((keycode == SDL_CONTROLLER_AXIS_LEFTY) && (value < -Constants::AXIS_ACTIVE_ZONE))) {
+	} else if (keycode == SDLK_UP) {
 		Pacman::getInstance()->direction_pre = Figur::UP;
-	} else if (keycode == SDLK_RIGHT || keycode == SDLK_l || keycode == SDL_CONTROLLER_BUTTON_DPAD_RIGHT || ((keycode == SDL_CONTROLLER_AXIS_LEFTX) && (value > Constants::AXIS_ACTIVE_ZONE))) {
+	} else if(keycode == SDLK_RIGHT) {
 		Pacman::getInstance()->direction_pre = Figur::RIGHT;
-	} else if (keycode == SDLK_DOWN || keycode == SDLK_j || keycode == SDL_CONTROLLER_BUTTON_DPAD_DOWN || ((keycode == SDL_CONTROLLER_AXIS_LEFTY) && (value > Constants::AXIS_ACTIVE_ZONE))) {
+	} else if (keycode == SDLK_DOWN) {
 		Pacman::getInstance()->direction_pre = Figur::DOWN;
 	}
 }
@@ -115,13 +113,10 @@ bool Game::eventloop() {
 			if(event.key.keysym.sym == SDLK_f) {
 				Uint32 ticksBefore = SDL_GetTicks();
 			    Screen::getInstance()->toggleFullscreen();
-			    completeRedraw = true;
 			    currentTicks += (SDL_GetTicks() - ticksBefore);
 			} else if(event.key.keysym.sym == SDLK_s) {
 				Sounds::getInstance()->toggleEnabled();
-			} else if(event.key.keysym.sym == SDLK_m) {
-				Sounds::getInstance()->toggleMusicEnabled();
-				if (Sounds::getInstance()->isMusicEnabled()) {
+				if (Sounds::getInstance()->isEnabled()) {
 					checkMusic();
 				}
 			} else if(event.key.keysym.sym == SDLK_p) {
@@ -132,27 +127,15 @@ bool Game::eventloop() {
 				return false;
 			}
 			break;
-		case SDL_CONTROLLERBUTTONDOWN:
-			if(gameOver)
-				return false;
-			if(!Pacman::getInstance()->is_dying() && !pause) 
-				preselectDirection(event.cbutton.button);
-			if(event.cbutton.button == SDL_CONTROLLER_BUTTON_BACK) 
-				return false;
-			break;
-		case SDL_CONTROLLERAXISMOTION:
-			if(gameOver)
-				return false;
-			if(!Pacman::getInstance()->is_dying() && !pause)
-				preselectDirection(event.caxis.axis, event.caxis.value);
-			break;
 		case SDL_QUIT:
 			return false;
 		}
-		// Redraw, when overlapped by foreign window
-		if(event.window.event == SDL_WINDOWEVENT_EXPOSED ||
-		   event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
-			Screen::getInstance()->clearOutsideClipRect();
+		if (event.type == SDL_ACTIVEEVENT) {
+			if (event.active.state & SDL_APPACTIVE || event.active.state & SDL_APPINPUTFOCUS) {
+				Screen::getInstance()->addTotalUpdateRect();
+				Screen::getInstance()->Refresh();
+			}
+		} else if (event.type == SDL_VIDEOEXPOSE) {
 			Screen::getInstance()->addTotalUpdateRect();
 			Screen::getInstance()->Refresh();
 		}
@@ -178,7 +161,6 @@ void Game::setGameOver(bool gameOver) {
 	}
 	HighscoreList::getInstance()->load();
 	if (!HighscoreList::getInstance()->isReadonly()) {
-		HighscoreList::getInstance()->resetHighlightedEntry();
 		HighscoreList::getInstance()->insertEntry(new HighscoreEntry(CommandLineOptions::getValue("","name"), Labyrinth::getInstance()->getScore(), Labyrinth::getInstance()->getLevelNumber()));
 		//HighscoreList::getInstance()->print();  // for testing purposes
 	}
@@ -260,7 +242,7 @@ void Game::handleAnimations() {
 				stop(true);
 				Pacman::getInstance()->addLives(-1);
 				checkGameOver();
-				Screen::getInstance()->addUpdateClipRect();
+				Screen::getInstance()->addTotalUpdateRect();
 			}
 		}
 		Labyrinth::getInstance()->pill_animation();
@@ -356,7 +338,7 @@ void Game::checkedMove() {
 
 void Game::checkedRedraw() {
 	// redraw, if something has to be redrawn
-	if (Ghost::was_moving_leader || refreshGhosts || completeRedraw) {
+	if (Ghost::was_moving_leader || refreshGhosts) {
 		// objects within the level
 		Labyrinth::getInstance()->draw_pillen();  // including background
 		Labyrinth::getInstance()->drawFruit();
@@ -378,10 +360,6 @@ void Game::checkedRedraw() {
 		Screen::getInstance()->draw_dynamic_content(levelLabel, Constants::LEVEL_X, Constants::LEVEL_Y);
 		Pacman::getInstance()->drawLives();
 		Labyrinth::getInstance()->drawInfoFruits();
-		if (completeRedraw) {
-			completeRedraw = false;
-			Screen::getInstance()->addTotalUpdateRect();
-		}
 		// bring it to the screen, really
 		Screen::getInstance()->Refresh();
 	}

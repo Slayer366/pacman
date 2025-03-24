@@ -1,8 +1,7 @@
 #ifndef SOUNDS_H
 #define SOUNDS_H
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_mixer.h>
-#include <iostream>
+#include <SDL/SDL.h>
+#include <SDL/SDL_mixer.h>
 #include "cmdline_options.h"
 #include "platform.h"
 #include "labyrinth_observer.h"
@@ -15,11 +14,8 @@ class Sounds : public LabyrinthObserver {
 		static Sounds *getInstance();
 		static void cleanUpInstance();
 		bool isEnabled() const;
-		bool isMusicEnabled() const;
 		void setEnabled(bool newValue = true);
-		void setMusicEnabled(bool newValue = true);
 		void toggleEnabled();
-		void toggleMusicEnabled();
 		enum MusicType {NONE, INTRO, NORMAL, SUPERPILL, GHOST_EATEN};
 		enum SingleSounds {DYING, EXTRA_MAN, FRUIT, EAT_GHOST};
 		void pauseAll();
@@ -38,11 +34,8 @@ class Sounds : public LabyrinthObserver {
 		static Sounds *instance;
 		Sounds();
 		~Sounds();
-		void initialize();
 		MusicType musicPlaying;
 		bool enabled;
-		bool musicEnabled;
-		bool initialized;
 		bool audioAvailable;
 		Mix_Chunk *chunk_munch_a = NULL;
 		Mix_Chunk *chunk_munch_b = NULL;

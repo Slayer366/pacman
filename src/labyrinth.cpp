@@ -1,6 +1,7 @@
 #include "labyrinth.h"
 #include "game.h"
-#include <sstream>
+#include <string.h>
+#include <iostream>
 #include "level.h"
 
 Labyrinth *Labyrinth::instance = NULL;
@@ -226,8 +227,8 @@ void Labyrinth::draw_blocks() {
   	b1.w = b2.w = Constants::TUNNEL_BLOCK_WIDTH;
   	b1.h = b2.h = Constants::TUNNEL_BLOCK_HEIGHT;
 
-	Screen::getInstance()->fillRect(&b1, 0, 0, 0);
-	Screen::getInstance()->fillRect(&b2, 0, 0, 0);
+  	SDL_FillRect(Screen::getInstance()->getSurface(), &b1, SDL_MapRGB(Screen::getInstance()->getSurface()->format, 0, 0, 0));
+  	SDL_FillRect(Screen::getInstance()->getSurface(), &b2, SDL_MapRGB(Screen::getInstance()->getSurface()->format, 0, 0, 0));
 }
 
 void Labyrinth::init_pillen(bool firstInit) {
@@ -286,8 +287,10 @@ void Labyrinth::init_pillen(bool firstInit) {
 			if (!pillen[i].superpille) {
 				dest.x = (short int) pillen[i].x;
 				dest.y = (short int) pillen[i].y;
-				dest.w = pille->w;
-				dest.h = pille->h;
+				//dest.w = pille->w;
+				//dest.h = pille->h;
+				dest.w = static_cast<Uint16>(std::max(0, pille->w));
+				dest.h = static_cast<Uint16>(std::max(0, pille->h));
 				SDL_BlitSurface(pille, NULL, pillSurface, &dest);
 			}
 		}
@@ -295,14 +298,18 @@ void Labyrinth::init_pillen(bool firstInit) {
 }
 
 void Labyrinth::draw_pillen() {
-	Screen::getInstance()->draw(pillSurface, 0, 0);
-	int x, y;
+	SDL_BlitSurface(pillSurface, NULL, Screen::getInstance()->getSurface(), NULL);
+	SDL_Rect dest;
 	for (int i = 0; i < 4; i++) {
 		if (pillen[idxSuperpills[i]].sichtbar) {
-			x = pillen[idxSuperpills[i]].x - 4;
-			y = pillen[idxSuperpills[i]].y - 4;
-			Screen::getInstance()->draw(superpille, x, y);
-			Screen::getInstance()->AddUpdateRects(x, y, superpille->w, superpille->h);
+			dest.x = (short int) (pillen[idxSuperpills[i]].x - 4);
+			dest.y = (short int) (pillen[idxSuperpills[i]].y - 4);
+			//dest.w = superpille->w;
+			//dest.h = superpille->h;
+			dest.w = static_cast<Uint16>(std::max(0, superpille->w));
+			dest.h = static_cast<Uint16>(std::max(0, superpille->h));
+			SDL_BlitSurface(superpille, NULL, Screen::getInstance()->getSurface(), &dest);
+			Screen::getInstance()->AddUpdateRects(dest.x, dest.y, superpille->w, superpille->h);
 		}
 	}
 }
@@ -318,12 +325,11 @@ void Labyrinth::pill_animation() {
 
 void Labyrinth::drawScoreValue() {
 	if (punktestand != lastPunktestand || !score) {
-		ostringstream ostrPunktestand;
-		ostrPunktestand.str("0");
-		ostrPunktestand << punktestand;
+		char charPunktestand[8] = "0";
+		sprintf(charPunktestand, "%d", punktestand);
 		if (score)
 			SDL_FreeSurface(score);
-		score = Screen::getTextSurface(Screen::getFont(), ostrPunktestand.str().c_str(), Constants::YELLOW_COLOR);
+		score = Screen::getTextSurface(Screen::getFont(), charPunktestand, Constants::YELLOW_COLOR);
 	}
 	Screen::getInstance()->draw_dynamic_content(score, Constants::SCORE_X, Constants::SCORE_VALUE_Y);
 }
@@ -344,9 +350,9 @@ void Labyrinth::resetBonusStage() {
 void Labyrinth::addScore(int value, int show_x, int show_y) {
 	punktestand += value;
 	// show the score at the specified position
-	ostringstream ostrScore;
-	ostrScore << value;
-	smallScore = Screen::getTextSurface(Screen::getSmallFont(), ostrScore.str().c_str(), Constants::WHITE_COLOR);
+	char ch[8] = "0";
+	sprintf(ch, "%d", value);
+	smallScore = Screen::getTextSurface(Screen::getSmallFont(), ch, Constants::WHITE_COLOR);
 	smallScore_x = show_x - (smallScore->w >> 1);
 	smallScore_y = show_y - (smallScore->h >> 1);
 	drawSmallScore();
@@ -431,7 +437,7 @@ void Labyrinth::resetAllFigures() {
 void Labyrinth::nextLevel() {
 	hideFruit();
 	drawScoreValue();
-	Screen::getInstance()->addUpdateClipRect();
+	Screen::getInstance()->addTotalUpdateRect();
 	Screen::getInstance()->Refresh();
 	SDL_Delay(Constants::WAIT_FOR_NEW_LEVEL);
 	level->nextLevel();
@@ -439,7 +445,6 @@ void Labyrinth::nextLevel() {
 }
 
 void Labyrinth::resetLevel(int level) {
-	Screen::getInstance()->clear();
 	hideFruit();
 	resetAllFigures();
 	if (level >= 1)
@@ -448,20 +453,19 @@ void Labyrinth::resetLevel(int level) {
 	draw_pillen();  // including background
 	loadLevelFruit();
 	startFruitRandomizer(true);
-	ostringstream ostrLevel;
+	char charLevel[20];
 	if (level == 1) {
 		setInitText("Get Ready!");
 	} else {
-		ostrLevel << "Level " << this->level->getLevelNumber();	
-		setInitText(ostrLevel.str().c_str());
+		sprintf(charLevel, "Level %d", this->level->getLevelNumber());
+		setInitText(charLevel);
 	}
 	if (levelNumber)
 		SDL_FreeSurface(levelNumber);
-	ostrLevel.str("");
-	ostrLevel << this->level->getLevelNumber();	
-	levelNumber = Screen::getTextSurface(Screen::getVeryLargeFont(), /*charLevel*/ostrLevel.str().c_str(), Constants::WHITE_COLOR);
+	sprintf(charLevel, "%d", this->level->getLevelNumber());
+	levelNumber = Screen::getTextSurface(Screen::getVeryLargeFont(), charLevel, Constants::WHITE_COLOR);
 	drawLevelNumber();
-	Screen::getInstance()->addUpdateClipRect();
+	Screen::getInstance()->addTotalUpdateRect();
 	Screen::getInstance()->Refresh();
 	for(unsigned int i = 0; i < vec_observer.size(); i++)
 		vec_observer.at(i)->setPanicMode(false);

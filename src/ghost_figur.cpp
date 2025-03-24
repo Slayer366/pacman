@@ -134,7 +134,8 @@ void Ghost::set_leader() {
 			getGhostArray()[i]->set_leader(true);
 		else
 			getGhostArray()[i]->set_leader(false);
-	}}
+	}
+}
 
 void Ghost::move_dir(int ms, int direction, int max_links, int max_oben, int max_rechts, int max_unten) {
 	if(direction == LEFT)

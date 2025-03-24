@@ -1,5 +1,4 @@
 #include "platform.h"
-
 #ifdef _WIN32
 #define WINDOWS 1
 #else
@@ -8,11 +7,11 @@
 
 void getFilePath(char filePath[], const char file[]) {
      char installDir[256];
-#if WINDOWS
+     if(WINDOWS)
          strcpy(installDir, "");
-#else
-         strcpy(installDir, PACKAGE_DATA_DIR "/");
-#endif
+     else
+         //strcpy(installDir, "/usr/local/share/pacman/");
+         strcpy(installDir, "");
      strcpy(filePath, installDir);
      strcat(filePath, file);
 }
@@ -20,49 +19,58 @@ void getFilePath(char filePath[], const char file[]) {
 static char gameDirBase[256];
 
 void getGameDirPath(char filePath[], const char fileName[]) {
-	if (!gameDirBase[0]) {
-		if (WINDOWS) {
-			char *env = getenv("APPDATA");
-			if (env) {
-				strcat(gameDirBase, env);
-			} else {
-				// not found, trying %HOMEDRIVE%%HOMEPATH%
-				env = getenv("HOMEDRIVE");
-				char *env2 = getenv("HOMEPATH");
-				if (env && env2) {
-					strcat(gameDirBase, env);
-					strcat(gameDirBase, env2);
-				} else {
-					// not found, using current directory
-				}
-			}
-			if (env) {
-				size_t len = strlen(gameDirBase);
-				if (len == 0 || gameDirBase[len-1] != '\\')
-					strcat(gameDirBase, "\\");
-				strcat(gameDirBase, "pacman_sdl\\");
-			}
-		} else {
-			strcpy(gameDirBase, getenv("HOME"));
-			size_t len = strlen(gameDirBase);
-			if (len == 0 || gameDirBase[len-1] != '/')
-				strcat(gameDirBase, "/");
-			strcat(gameDirBase, ".pacman_sdl/");
-		}
-	}
-	strcpy(filePath, gameDirBase);
-	if (fileName)
-		strcat(filePath, fileName);
+//	if (!gameDirBase[0]) {
+//		if (WINDOWS) {
+//			char *env = getenv("APPDATA");
+//			if (env) {
+//				strcat(gameDirBase, env);
+//			} else {
+//				// not found, trying %HOMEDRIVE%%HOMEPATH%
+//				env = getenv("HOMEDRIVE");
+//				char *env2 = getenv("HOMEPATH");
+//				if (env && env2) {
+//					strcat(gameDirBase, env);
+//					strcat(gameDirBase, env2);
+//				} else {
+//					// not found, using current directory
+//				}
+//			}
+//			if (env) {
+//				size_t len = strlen(gameDirBase);
+//				if (len == 0 || gameDirBase[len-1] != '\\')
+//					strcat(gameDirBase, "\\");
+//				strcat(gameDirBase, "pacman_sdl\\");
+//			}
+//		} else {
+//			strcpy(gameDirBase, getenv("HOME"));
+//			size_t len = strlen(gameDirBase);
+//			if (len == 0 || gameDirBase[len-1] != '/')
+//				strcat(gameDirBase, "/");
+//			strcat(gameDirBase, ".pacman_sdl/");
+//		}
+//	}
+    // Always use the current directory
+    // I've never understood why the game data
+    // should be separated from its executable
+    // anyway.  That is just strange to me.
+    strcpy(gameDirBase, "./");
+
+    strcpy(filePath, gameDirBase);
+    if (fileName)
+        strcat(filePath, fileName);
 }
 
 void createGameDir() {
-	char gameDir[256];
-	getGameDirPath(gameDir, NULL);
-#ifdef _WIN32
-	_mkdir(gameDir);
-#else
-	mkdir(gameDir, 0770);  // rwxrwx---
-#endif
+    // The program should have no need to create the game folders.
+    // They should just already exist and be detected if the data
+    // is placed in the appropriate location.
+    char gameDir[256];
+    getGameDirPath(gameDir, NULL);
+//#ifdef _WIN32
+//    _mkdir(gameDir);
+//#else
+//    mkdir(gameDir, 0777);  // rwxrwxrwx
+//#endif
 }
 
 bool fileExists(const char *filePath) {

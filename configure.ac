@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([pacman], [0.9.4])
+AC_INIT([pacman], [0.7.1])
 AC_CONFIG_SRCDIR([config.h.in])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_HEADERS([config.h])
@@ -21,14 +21,14 @@ AC_PROG_RANLIB
 # Checks for libraries.
 dnl Checks for libraries
 dnl Check for SDL
-SDL_VERSION=2.0
-AM_PATH_SDL2($SDL_VERSION, 
+SDL_VERSION=1.2.0
+AM_PATH_SDL($SDL_VERSION, 
 	    :, 
 	    AC_MSG_ERROR([*** SDL version $SDL_VERSION not found!])
 	   )
-AC_CHECK_LIB([SDL2_image], [main],,[AC_MSG_ERROR([SDL_image is required to compile pacman])])
-AC_CHECK_LIB([SDL2_ttf], [main],,[AC_MSG_ERROR([SDL_ttf is required to compile pacman])])
-AC_CHECK_LIB([SDL2_mixer], [main],,[AC_MSG_ERROR([SDL_mixer is required to compile pacman])])
+AC_CHECK_LIB([SDL_image], [main],,[AC_MSG_ERROR([SDL_image is required to compile pacman])])
+AC_CHECK_LIB([SDL_ttf], [main],,[AC_MSG_ERROR([SDL_ttf is required to compile pacman])])
+AC_CHECK_LIB([SDL_mixer], [main],,[AC_MSG_ERROR([SDL_mixer is required to compile pacman])])
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdlib.h])
@@ -42,7 +42,6 @@ AC_CHECK_FUNCS([atexit])
 AC_CONFIG_FILES([Makefile data/Makefile
                  data/fonts/Makefile
                  data/gfx/Makefile
-				 data/sounds/Makefile
-				 data/txt/Makefile
+data/sounds/Makefile
                  src/Makefile])
 AC_OUTPUT
