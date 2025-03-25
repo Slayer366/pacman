@@ -24,6 +24,7 @@ class Screen {
 		// register graphic parts for updating
 		void AddUpdateRects(int x, int y, int w, int h);  // should be renamed to addUpdateRect
 		void addTotalUpdateRect();
+		void addUpdateClipRect();
 		// actually display the updated rectangles
 		void Refresh();
 
@@ -49,8 +50,8 @@ class Screen {
 		}
 
 		// draw a horizontal or vertical line using the specified color
-		void drawHorizontalLine(int x1, int x2, int y, Uint8 r, Uint8 g, Uint8 b);
-		void drawVerticalLine(int x, int y1, int y2, Uint8 r, Uint8 g, Uint8 b);
+		//void drawHorizontalLine(int x1, int x2, int y, Uint8 r, Uint8 g, Uint8 b);
+		//void drawVerticalLine(int x, int y1, int y2, Uint8 r, Uint8 g, Uint8 b);
 		void clear();
 
 		static SDL_Surface *loadImage(const char *filename, int transparentColor = -1);

@@ -17,10 +17,10 @@ AC_PROG_MAKE_SET
 AC_PROG_RANLIB
 
 # Checks for libraries.
-# FIXME: Replace `main' with a function in `-lSDL2':
-AC_CHECK_LIB([SDL2], [main])
-# FIXME: Replace `main' with a function in `-lSDL2_mixer':
-AC_CHECK_LIB([SDL2_mixer], [main])
+# FIXME: Replace `main' with a function in `-lSDL':
+AC_CHECK_LIB([SDL], [main])
+# FIXME: Replace `main' with a function in `-lSDL_mixer':
+AC_CHECK_LIB([SDL_mixer], [main])
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdlib.h string.h unistd.h])

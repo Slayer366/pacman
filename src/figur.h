@@ -90,8 +90,6 @@ class Figur {
 		int initial_x;
 		int initial_y;
 		int initial_v;
-		//SDL_Surface *LoadSurface(const char *filename, int transparent_color);
-		//Screen *screen;
 		Hunter hunter;
 		int visible;
 		bool directionChanged;

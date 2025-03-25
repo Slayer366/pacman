@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([pacman], [0.7.1])
+AC_INIT([pacman], [0.7.2])
 AC_CONFIG_SRCDIR([config.h.in])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_HEADERS([config.h])
@@ -42,6 +42,7 @@ AC_CHECK_FUNCS([atexit])
 AC_CONFIG_FILES([Makefile data/Makefile
                  data/fonts/Makefile
                  data/gfx/Makefile
-data/sounds/Makefile
+				 data/sounds/Makefile
+				 data/txt/Makefile
                  src/Makefile])
 AC_OUTPUT

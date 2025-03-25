@@ -22,6 +22,7 @@ class HighscoreEntry {
 		int getPlayerNameLength() { return (int)playerName.length(); }
 		void addCharToPlayerName(const char c);
 		void removeLastCharFromPlayerName();
+		void rotateLastCharOfPlayerName(bool reverse);
 		void setPlayerName(const char *newName) { playerName = newName; }
 	private:
 		std::string playerName;
@@ -37,6 +38,7 @@ class HighscoreList {
 		int getIdxLastInsertedEntry() { return idxLastInsertedEntry; }
 		void print();
 		void show(bool nameAlterable, bool highlightLast);
+		void resetHighlightedEntry();
 		void load();
 		void save();
 		HighscoreEntry *getEntry(int index);
@@ -46,8 +48,10 @@ class HighscoreList {
 		HighscoreList(uint8_t maxSize);
 		~HighscoreList();
 		void draw(bool nameAlterable, bool highlightLast);
+		void finishEntry();
 		bool eventloop(bool nameAlterable, bool *redrawNeeded);
 		bool readEncryptedLine(std::ifstream &f, std::string &line);
+		bool readLine(std::ifstream &f, std::string &line);
 		uint8_t maxSize;
 		std::vector<HighscoreEntry*> *entries;
 		int idxLastInsertedEntry, idxHighlightedEntry;

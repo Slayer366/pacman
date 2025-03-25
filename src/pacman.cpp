@@ -1,21 +1,23 @@
 #include "pacman.h"
 #include "config.h"
+
 int main(int argc, char *argv[]) {
-	srand((unsigned int)time(0)); // init randomize
+	srand((unsigned int) time(0)); // init randomize
 
 	CommandLineOptions::set(argc, argv);
 	if (CommandLineOptions::exists("h", "help")) {
-		std::cout << "This game is a Pacman clone (version " << VERSION << ")." << std::endl
-		          << "Usage: pacman [options]"                                  << std::endl
+		std::cout << "This game is a Pacman clone (version " << VERSION << ")."              << std::endl
+		          << "Usage: pacman [options]"                                               << std::endl
 		          << std::endl
-		          << "Options:"                                                 << std::endl
-		          << "  -h, --help         Display this help message and quit." << std::endl
-		          << "  -f, --fullscreen   Start the game in fullscreen mode."  << std::endl
-		          << "  -s, --nosound      Start with sound switched off."      << std::endl
-		          << "  -v, --version      Print version and quit."             << std::endl
-		          << "  --name=...         Provide the player's name."          << std::endl
-		          << "  --highscore=...    Define path to highscore file."      << std::endl
-		          << "  --hs-key=...       Highscore encryption key (hex)."     << std::endl
+		          << "Options:"                                                              << std::endl
+		          << "  -h, --help         Display this help message and quit."              << std::endl
+		          << "  -f, --fullscreen   Start the game in fullscreen mode."               << std::endl
+		          << "  -s, --nosound      Start with sound switched off."                   << std::endl
+		          << "  -m, --nomusic      Start with music switched off."                   << std::endl
+		          << "  -v, --version      Print version number and quit."                   << std::endl
+		          << "  --name=...         Provide the player's name."                       << std::endl
+		          << "  --highscore=...    Define path to highscore file."                   << std::endl
+		          << "  --hs-key=...       Highscore encryption key (hexadecimal)."          << std::endl
 		          << std::endl;
 		return EXIT_SUCCESS;
 	}

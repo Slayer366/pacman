@@ -1,5 +1,4 @@
 #include "sounds.h"
-#include <iostream>
 #include "labyrinth.h"
 
 Sounds *Sounds::instance = NULL;
@@ -23,18 +22,30 @@ Sounds::Sounds():
 	munch_toggle(true),
 	audioAvailable(true),
 	enabled(!CommandLineOptions::exists("s","nosound")),
+	musicEnabled(!CommandLineOptions::exists("m","nomusic")),
+	initialized(false),
 	musicPlaying(NONE),
 	panicMode(false)
 {
+	if (enabled || musicEnabled) {
+		initialize();
+	}
+}
+
+void Sounds::initialize() {
 	int audio_rate = 44100;
 	Uint16 audio_format = AUDIO_S16SYS;
 	int audio_channels = 2;
-	int audio_buffers = 2048; //1024;
+	int audio_buffers = 2048;
 
-	if(Mix_OpenAudio(audio_rate, audio_format, audio_channels, audio_buffers) != 0) {
-		std::cerr << "Unable to initialize audio: " << Mix_GetError() << std::endl;
+	if (SDL_Init(SDL_INIT_AUDIO) != 0) {
+		std::cout << "SDL audio initialization failed (SDL_InitSubSystem): " << SDL_GetError() << std::endl;
 		audioAvailable = false;
-		enabled        = false;
+	}
+
+	if (audioAvailable && Mix_OpenAudio(audio_rate, audio_format, audio_channels, audio_buffers) != 0) {
+		std::cerr << "Unable to initialize audio (MixOpenAudio): " << Mix_GetError() << std::endl;
+		audioAvailable = false;
 	}
 	if (audioAvailable) {
 		chunk_munch_a = loadWaveSound("sounds/munch_a.wav");
@@ -49,12 +60,16 @@ Sounds::Sounds():
 		music_siren_fast = loadWaveMusic("sounds/siren_fast.wav");
 		music_superpill_loop = loadWaveMusic("sounds/large_pellet_loop.wav");
 		music_eat_ghost = loadWaveMusic("sounds/ghost_eat_1.wav");
+		initialized = true;
+	} else {
+		enabled      = false;
+		musicEnabled = false;
 	}
 	Labyrinth::getInstance()->setLabyrinthObserver(this);
 }
 
 Sounds::~Sounds() {
-	if (audioAvailable) {
+	if (initialized) {
 		Mix_HaltChannel(-1);
 		Mix_HaltMusic();
 		SAFE_FREE_CHUNK(chunk_munch_a);
@@ -68,6 +83,7 @@ Sounds::~Sounds() {
 		SAFE_FREE_MUSIC(music_superpill_loop);
 		SAFE_FREE_MUSIC(music_eat_ghost);
 		Mix_CloseAudio();
+		SDL_CloseAudio();
 	}
 }
 
@@ -75,11 +91,17 @@ bool Sounds::isEnabled() const {
 	return enabled;
 }
 
+bool Sounds::isMusicEnabled() const {
+	return musicEnabled;
+}
+
 void Sounds::setEnabled(bool newValue) {
+	if (newValue && !initialized) {
+		initialize();
+	}
 	if (audioAvailable || !newValue) {
 		enabled = newValue;
 		if (!enabled && audioAvailable) {
-			stopMusic();
 			stopChannels();
 		}
 	} else {
@@ -87,8 +109,26 @@ void Sounds::setEnabled(bool newValue) {
 	}
 }
 
+void Sounds::setMusicEnabled(bool newValue) {
+	if (newValue && !initialized) {
+		initialize();
+	}
+	if (audioAvailable || !newValue) {
+		musicEnabled = newValue;
+		if (!musicEnabled && audioAvailable) {
+			stopMusic();
+		}
+	} else {
+		std::cerr << "Music is not available, so it cannot be enabled. See error message above." << std::endl;
+	}
+}
+
 void Sounds::toggleEnabled() {
 	setEnabled(!isEnabled());
+}
+
+void Sounds::toggleMusicEnabled() {
+	setMusicEnabled(!isMusicEnabled());
 }
 
 void Sounds::playMunch() {
@@ -111,7 +151,7 @@ void Sounds::playMunch() {
 }
 
 void Sounds::playIntro() {
-	if(enabled && musicPlaying != INTRO && music_intro) {
+	if(musicEnabled && musicPlaying != INTRO && music_intro) {
 		stopMusic();
 		if(Mix_PlayMusic(music_intro,1) == -1)
 			std::cerr << "Unable to play WAV file: " << Mix_GetError() << std::endl;
@@ -120,7 +160,7 @@ void Sounds::playIntro() {
 }
 
 void Sounds::playNormalMusic() {
-	if (enabled && musicPlaying != NORMAL && (music_siren_slow || music_siren_medium)) {
+	if (musicEnabled && musicPlaying != NORMAL && (music_siren_slow || music_siren_medium)) {
 		stopMusic();
 		if(Mix_PlayMusic(panicMode ? music_siren_medium :music_siren_slow,-1) == -1)
 			std::cerr << "Unable to play WAV file: " << Mix_GetError() << std::endl;
@@ -129,7 +169,7 @@ void Sounds::playNormalMusic() {
 }
 
 void Sounds::playSuperpillMusic() {
-	if (enabled && musicPlaying != SUPERPILL && music_superpill_loop) {
+	if (musicEnabled && musicPlaying != SUPERPILL && music_superpill_loop) {
 		stopMusic();
 		if((Mix_PlayMusic(music_superpill_loop, -1)) == -1)
 			std::cerr << "Unable to play WAV file: " << Mix_GetError() << std::endl;
@@ -138,7 +178,7 @@ void Sounds::playSuperpillMusic() {
 }
 
 void Sounds::playGhostEatenMusic() {
-	if (enabled && musicPlaying != GHOST_EATEN && music_eat_ghost) {
+	if (musicEnabled && musicPlaying != GHOST_EATEN && music_eat_ghost) {
 		stopMusic();
 		if((Mix_PlayMusic(music_eat_ghost, -1)) == -1)
 			std::cerr << "Unable to play WAV file: " << Mix_GetError() << std::endl;
@@ -162,11 +202,10 @@ void Sounds::pauseAll() {
 }
 
 void Sounds::resumeAll() {
-	if(enabled) {
-		if(Mix_PausedMusic())
-			Mix_ResumeMusic();
+	if(musicEnabled && Mix_PausedMusic())
+		Mix_ResumeMusic();
+	if(enabled)
 		Mix_Resume(-1);
-	}
 }
 
 void Sounds::playSingleSound(SingleSounds singlesounds) {

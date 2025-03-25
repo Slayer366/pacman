@@ -48,14 +48,16 @@ Screen::Screen():
 	rect_num(0)
 {
 	// initialize SDL
-	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
-        printf("SDL initialization failed: %s\n", SDL_GetError());
+	if(SDL_Init(SDL_INIT_VIDEO) != 0) {
+		std::cout << "SDL video initialization failed: " << SDL_GetError() << std::endl;
         sdlInitErrorOccured = true;
     }
 	if(!sdlInitErrorOccured && TTF_Init() == -1) {
-		printf("TTF initialization failed: %s\n", TTF_GetError());
+		std::cout << "TTF initialization failed: " << TTF_GetError() << std::endl;
         sdlInitErrorOccured = true;
 	}
+
+	SDL_ShowCursor(SDL_DISABLE);
 
 	atexit(SDL_Quit);
 	atexit(SDL_CloseAudio);
@@ -63,7 +65,7 @@ Screen::Screen():
 	if (!sdlInitErrorOccured) {
 	screen_surface = SDL_SetVideoMode(640, 480, 24, SDL_HWSURFACE);
 		if(screen_surface == 0) {
-			printf("Setting video mode failed: %s\n",SDL_GetError());
+			std::cout << "Setting video mode failed: " << SDL_GetError() << std::endl;
 			sdlInitErrorOccured = true;
 		}
 	}
@@ -102,8 +104,15 @@ void Screen::AddUpdateRects(int x, int y, int w, int h) {
 }
 
 void Screen::addTotalUpdateRect() {
-	rect_num = 0;  // all other update rects will be included in this one
-	AddUpdateRects(0, 0, screen_surface->w, screen_surface->h);
+	rects[0].x = 0;
+	rects[0].y = 0;
+	rects[0].w = static_cast<Uint16>(screen_surface->w);  // no scalingFactor as screen_surface already is the total screen surface
+	rects[0].h = static_cast<Uint16>(screen_surface->h);
+	rect_num = 1;  // all other update rects will be included in this one
+}
+
+void Screen::addUpdateClipRect() {
+	AddUpdateRects(0, 0, Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT);
 }
 
 void Screen::Refresh() {
@@ -113,12 +122,12 @@ void Screen::Refresh() {
 
 void Screen::draw_dynamic_content(SDL_Surface *surface, int x, int y) {
 	SDL_Rect dest;
-	dest.x = (short int)x;
-	dest.y = (short int)y;
-	dest.w = (short int)surface->w;
-	dest.h = (short int)surface->h;
-	SDL_BlitSurface(surface, NULL, this->screen_surface, &dest);
-	this->AddUpdateRects(dest.x, dest.y, surface->w + 10, surface->h);
+	dest.x = (short int) x;
+	dest.y = (short int) y;
+	dest.w = (short int) surface->w;
+	dest.h = (short int) surface->h;
+	SDL_BlitSurface(surface, NULL, screen_surface, &dest);
+	AddUpdateRects(x, y, surface->w + 10, surface->h);
 }
 
 void Screen::draw(SDL_Surface* graphic, int offset_x, int offset_y) {
@@ -126,11 +135,11 @@ void Screen::draw(SDL_Surface* graphic, int offset_x, int offset_y) {
         SDL_BlitSurface(graphic, NULL, screen_surface, NULL);
     } else {
         SDL_Rect position;
-        position.x = (short int)offset_x;
-        position.y = (short int)offset_y;
-		position.w = (short int)graphic->w;
-		position.h = (short int)graphic->h;
-        SDL_BlitSurface(graphic, NULL, screen_surface, &position);
+        position.x = (short int) offset_x;
+        position.y = (short int) offset_y;
+		position.w = (short int) graphic->w;
+		position.h = (short int) graphic->h;
+		SDL_BlitSurface(graphic, NULL, screen_surface, &position);
     }
 }
 
@@ -144,67 +153,69 @@ void Screen::setFullscreen(bool fs) {
         newScreen = SDL_SetVideoMode(640, 480, 24, SDL_HWSURFACE);
     if (NULL != newScreen) {  // successful? NULL indicates failure
         screen_surface = newScreen;  // take it, but do not dispose of the old screen (says SDL documentation)
-        AddUpdateRects(0, 0, screen_surface->w, screen_surface->h);
+        //AddUpdateRects(0, 0, screen_surface->w, screen_surface->h);
+		addTotalUpdateRect();
+
         // no Refresh() here, because at this moment nothing has been drawn to the new screen
         fullscreen = fs;
     } else {
 		if (fs) {
-			printf("Switching to fullscreen mode failed: %s\n",SDL_GetError());
+			std::cout << "Switching to fullscreen mode failed: " << SDL_GetError() << std::endl;
 		} else {
-			printf("Switching from fullscreen mode failed: %s\n",SDL_GetError());
+			std::cout << "Switching from fullscreen mode failed: " << SDL_GetError() << std::endl;
 		}
 	}
 }
 
-void Screen::drawHorizontalLine(int x1, int x2, int y, Uint8 r, Uint8 g, Uint8 b) {
-	if (SDL_MUSTLOCK(this->screen_surface))
-		SDL_LockSurface(this->screen_surface);
-	Uint8* p;
-	for (int i = x1; i <= x2; ++i) {
-		p = (Uint8*) this->screen_surface->pixels + (y * this->screen_surface->pitch) + (i * sizeof(Uint8) * 3);
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-		p[0] = r; p[1] = g; p[2] = b;
-#else
-		p[0] = b; p[1] = g; p[2] = r;
-#endif
-	}
-	if (SDL_MUSTLOCK(this->screen_surface))
-		SDL_UnlockSurface(this->screen_surface);
-}
-
-void Screen::drawVerticalLine(int x, int y1, int y2, Uint8 r, Uint8 g, Uint8 b) {
-	if (SDL_MUSTLOCK(this->screen_surface))
-		SDL_LockSurface(this->screen_surface);
-	Uint8* p;
-	for (int i = y1; i <= y2; ++i) {
-		p = (Uint8*) this->screen_surface->pixels + (i * this->screen_surface->pitch) + (x * sizeof(Uint8) * 3);
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-		p[0] = r; p[1] = g; p[2] = b;
-#else
-		p[0] = b; p[1] = g; p[2] = r;
-#endif
-	}
-	if (SDL_MUSTLOCK(this->screen_surface))
-		SDL_UnlockSurface(this->screen_surface);
-}
-
-SDL_Surface *Screen::LoadSurface(const char *filename, int transparent_color) {
-	SDL_Surface *surface, *temp;
-	temp = IMG_Load(filename);
-	if(!temp) {
-		printf("Unable to load image: %s\n", IMG_GetError());
-		exit(-1);
-	}
-	if(transparent_color != -1)
-		SDL_SetColorKey(temp, SDL_SRCCOLORKEY | SDL_RLEACCEL, (Uint32)SDL_MapRGB(temp->format, (uint8_t)transparent_color, (uint8_t)transparent_color, (uint8_t)transparent_color));
-	surface = SDL_DisplayFormat(temp);
-	if(surface == NULL) {
-		printf("Unable to convert image to display format: %s\n", SDL_GetError());
-                exit(EXIT_FAILURE);
-        }
-    SDL_FreeSurface(temp);
-    return surface;
-}
+//void Screen::drawHorizontalLine(int x1, int x2, int y, Uint8 r, Uint8 g, Uint8 b) {
+//	if (SDL_MUSTLOCK(this->screen_surface))
+//		SDL_LockSurface(this->screen_surface);
+//	Uint8* p;
+//	for (int i = x1; i <= x2; ++i) {
+//		p = (Uint8*) this->screen_surface->pixels + (y * this->screen_surface->pitch) + (i * sizeof(Uint8) * 3);
+//#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+//		p[0] = r; p[1] = g; p[2] = b;
+//#else
+//		p[0] = b; p[1] = g; p[2] = r;
+//#endif
+//	}
+//	if (SDL_MUSTLOCK(this->screen_surface))
+//		SDL_UnlockSurface(this->screen_surface);
+//}
+//
+//void Screen::drawVerticalLine(int x, int y1, int y2, Uint8 r, Uint8 g, Uint8 b) {
+//	if (SDL_MUSTLOCK(this->screen_surface))
+//		SDL_LockSurface(this->screen_surface);
+//	Uint8* p;
+//	for (int i = y1; i <= y2; ++i) {
+//		p = (Uint8*) this->screen_surface->pixels + (i * this->screen_surface->pitch) + (x * sizeof(Uint8) * 3);
+//#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+//		p[0] = r; p[1] = g; p[2] = b;
+//#else
+//		p[0] = b; p[1] = g; p[2] = r;
+//#endif
+//	}
+//	if (SDL_MUSTLOCK(this->screen_surface))
+//		SDL_UnlockSurface(this->screen_surface);
+//}
+//
+//SDL_Surface *Screen::LoadSurface(const char *filename, int transparent_color) {
+//	SDL_Surface *surface, *temp;
+//	temp = IMG_Load(filename);
+//	if(!temp) {
+//		printf("Unable to load image: %s\n", IMG_GetError());
+//		exit(-1);
+//	}
+//	if(transparent_color != -1)
+//		SDL_SetColorKey(temp, SDL_SRCCOLORKEY | SDL_RLEACCEL, (Uint32)SDL_MapRGB(temp->format, (uint8_t)transparent_color, (uint8_t)transparent_color, (uint8_t)transparent_color));
+//	surface = SDL_DisplayFormat(temp);
+//	if(surface == NULL) {
+//		printf("Unable to convert image to display format: %s\n", SDL_GetError());
+//                exit(EXIT_FAILURE);
+//        }
+//    SDL_FreeSurface(temp);
+//    return surface;
+//}
 
 SDL_Surface *Screen::loadImage(const char *filename, int transparent_color) {
 	char filePath[256];
@@ -212,14 +223,14 @@ SDL_Surface *Screen::loadImage(const char *filename, int transparent_color) {
 	SDL_Surface *surface, *temp;
 	temp = IMG_Load(filePath);
 	if (!temp) {
-		printf("Unable to load image: %s\n", IMG_GetError());
+		std::cout << "Unable to load image: " << IMG_GetError() << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	if (transparent_color != -1)
 		SDL_SetColorKey(temp, SDL_SRCCOLORKEY | SDL_RLEACCEL, (Uint32)SDL_MapRGB(temp->format, (uint8_t)transparent_color, (uint8_t)transparent_color, (uint8_t)transparent_color));
 	surface = SDL_DisplayFormat(temp);
 	if (surface == NULL) {
-		printf("Unable to convert image to display format: %s\n", SDL_GetError());
+		std::cout << "Unable to convert image to display format: " << SDL_GetError() << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	SDL_FreeSurface(temp);
@@ -231,7 +242,7 @@ TTF_Font *Screen::loadFont(const char *filename, int ptSize) {
 	getFilePath(filePath, filename);
 	TTF_Font *font = TTF_OpenFont(filePath, ptSize);
 	if (!font) {
-		printf("Unable to open TTF font: %s\n", TTF_GetError());
+		std::cout << "Unable to open TTF font: " << TTF_GetError() << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	return font;
@@ -240,7 +251,7 @@ TTF_Font *Screen::loadFont(const char *filename, int ptSize) {
 SDL_Surface *Screen::getTextSurface(TTF_Font *font, const char *text, SDL_Color color) {
 	SDL_Surface *surface = TTF_RenderText_Solid(font, text, color);
 	if (!surface) {
-		printf("Unable to render text \"%s\": %s\n", text, TTF_GetError());
+		std::cout << "Unable to render text \"" << text << "\": " << TTF_GetError() << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	return surface;
